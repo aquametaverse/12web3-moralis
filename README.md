@@ -35,3 +35,8 @@ GET: https://<RapidAPI>/sandbankspp/waves/
 result:
 data: {"valid_time":"2022-09-17T00:00:00","wave_height_ft":1} 
 
+
+
+
+
+======================================

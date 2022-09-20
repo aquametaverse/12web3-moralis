@@ -1,0 +1,18 @@
+Data about a Spot on AquaMetaverse = real spot using geolocation in map
+
+Each spot must have geolocation data, Country, State, City, Lake, Region, Spot ID 
+
+
+IPFS Folder / File  structure 
+
+FOLDER BY 
+
+        DIR SPOT-ID  
+            spotinfo.dat
+            orgs.dat 
+            events.dat
+               DIR 202209012355001  
+                  waveinfo.dat 
+                  weather.dat
+                  airquality.dat
+                  waterquality.dat  
