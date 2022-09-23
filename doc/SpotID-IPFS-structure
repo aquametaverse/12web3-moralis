@@ -5,14 +5,18 @@ Each spot must have geolocation data, Country, State, City, Lake, Region, Spot I
 
 IPFS Folder / File  structure 
 
+All files are accepted by Moralis IPFS API as base64-encoded values
+
 FOLDER BY 
 
-        DIR SPOT-ID  
+        DIR SPOT-ID: aquametaverse/poc/env_data/sandbankspp/
             spotinfo.dat
             orgs.dat 
             events.dat
-               DIR 202209012355001  
+               DIR 20220922T060000 # UTC datetime stamp in basic form
                   waveinfo.dat 
                   weather.dat
                   airquality.dat
                   waterquality.dat  
+
+Example of the full path: aquametaverse/poc/env_data/sandbankspp/20220922T060000/waveinfo.dat
