@@ -15,16 +15,27 @@ from moralis_client import *
 LOCAL_MODE = False
 IS_VERBOSE = False
 DEBUG_LEVEL = 0
-DEFAULT_CONFIG = "wgen.ini"
+DEFAULT_CONFIG = "/etc/wgen.ini"
 IPFS_ROOT = "aquametaverse/poc/env_data/spot_id"
+STATUS_LOG = "/var/log/wgen/wgen.log"
+TIME_FORMATS = {
+    "human": "%m/%d/%Y %H:%M",
+    "meteo": "%Y%m%dT%H%M",
+    "meteo_sec": "%Y%m%dT%H%M%S",
+}
 
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.INFO,
-    format="%(asctime)s %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+rootLogger = logging.getLogger()
+rootLogger.setLevel(logging.INFO)
+
+fileLogFormatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+fileHandler = logging.FileHandler(STATUS_LOG)
+fileHandler.setFormatter(fileLogFormatter)
+rootLogger.addHandler(fileHandler)
+
+consoleFormatter = logging.Formatter("[%(levelname)-5.5s]  %(message)s")
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(consoleFormatter)
+rootLogger.addHandler(consoleHandler)
 
 TIME_FORMATS = {
     "human": "%m/%d/%Y %H:%M",
@@ -60,10 +71,32 @@ def main(argv=sys.argv):
         "-d", "--debug", action="store_true", required=False, help="debug mode"
     )
     ap.add_argument(
-        "-l", "--local", action="store_true", required=False, help="local images only"
+        "-l",
+        "--local",
+        action="store_true",
+        required=False,
+        help="local action, do not send to IPFS",
     )
     ap.add_argument(
-        "-c", "--config", action="store_true", required=False, help="local images only"
+        "-c",
+        "--config",
+        action="store",
+        required=False,
+        help="config file path and name",
+    )
+    ap.add_argument(
+        "-i",
+        "--info",
+        action="store_true",
+        required=False,
+        help="spot info - spotinfo.dat",
+    )
+    ap.add_argument(
+        "-w",
+        "--waves",
+        action="store_true",
+        required=False,
+        help="waves - waveinfo.dat",
     )
 
     args = ap.parse_args()
@@ -92,22 +125,29 @@ def main(argv=sys.argv):
     spot_ids = radar_api.get_spot_ids()
 
     for spot_id in spot_ids:
-        info = radar_api.get_spot_info(spot_id)
-        content_json = json.dumps(info)
-        target = "/".join([ipfs_root, spot_id, "spotinfo.dat"])
-        ipfs_result = ipfs_api.ipfs_upload_folder(target, content_json)
-        logging.info(f"target_folder={target}")
-        logging.info(f"ipfs_result={repr(ipfs_result)}")
+        if args.info:
+            info = radar_api.get_spot_info(spot_id)
+            content_json = json.dumps(info)
+            logging.debug(f"sr_info_json={content_json}")
+            target = "/".join([ipfs_root, spot_id, "spotinfo.dat"])
+            logging.info(f"target_folder={target}")
+            if not args.local:
+                ipfs_result = ipfs_api.ipfs_upload_folder(target, content_json)
+                logging.info(f"ipfs_result={repr(ipfs_result)}")
 
-        waves = radar_api.get_waves(spot_id)
-        forecast_dto = get_datetime_object(waves["valid_time_utc"])
-        forecast_dts = forecast_dto.strftime(TIME_FORMATS["meteo_sec"])
-        content = {"wave_height_ft": waves["wave_height_ft"]}
-        content_json = json.dumps({"wave_height_ft": waves["wave_height_ft"]})
-        target = "/".join([ipfs_root, spot_id, forecast_dts, "waveinfo.dat"])
-        logging.info(f"target_folder={target}")
-        ipfs_result = ipfs_api.ipfs_upload_folder(target, content_json)
-        logging.info(f"ipfs_result={repr(ipfs_result)}")
+        if args.waves:
+            waves = radar_api.get_waves(spot_id)
+            logging.debug(f"sr_waves_raw={waves}")
+            forecast_dto = get_datetime_object(waves["valid_time_utc"])
+            forecast_dts = forecast_dto.strftime(TIME_FORMATS["meteo_sec"])
+            content = {"wave_height_ft": waves["wave_height_ft"]}
+            content_json = json.dumps({"wave_height_ft": waves["wave_height_ft"]})
+            logging.debug(f"waves_json={content_json}")
+            target = "/".join([ipfs_root, spot_id, forecast_dts, "waveinfo.dat"])
+            logging.info(f"target_folder={target}")
+            if not args.local:
+                ipfs_result = ipfs_api.ipfs_upload_folder(target, content_json)
+                logging.info(f"ipfs_result={repr(ipfs_result)}")
 
 
 if __name__ == "__main__":
